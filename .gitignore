@@ -32,5 +32,10 @@ build/
 ### VS Code ###
 .vscode/
 
-## ENV
-.env
+## certs/keys ##
+private-key.pem
+public-key.pem
+
+### env ###
+.env.properties
+*.env
