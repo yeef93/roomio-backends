@@ -8,7 +8,7 @@ RUN mvn package -DskipTests
 RUN echo "done"
 
 # Running the application
-FROM openjdk:21-slim
+FROM openjdk:22-slim
 WORKDIR /app
 COPY --from=build /app/target/roomio-backends-0.0.1-SNAPSHOT.jar /app/
 ENTRYPOINT ["java","-jar","/app/app.jar"]
