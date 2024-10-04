@@ -39,3 +39,4 @@ public-key.pem
 ### env ###
 .env.properties
 *.env
+.env
