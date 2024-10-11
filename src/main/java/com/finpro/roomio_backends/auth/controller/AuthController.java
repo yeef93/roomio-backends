@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -77,6 +78,18 @@ public class AuthController {
             return Response.failedResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "An unexpected error occurred.");
         }
     }
+
+    @PostMapping("/google-login")
+    public ResponseEntity<?> loginWithGoogle(@RequestBody Map<String, String> userData) {
+        try{
+            return authService.loginWithGoogle(userData);
+        }
+        catch (Exception ex) {
+            // Handle unexpected errors
+            return Response.failedResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "An unexpected error occurred.");
+        }
+    }
+
 
     @PostMapping("/resend-verification")
     public ResponseEntity<Response<Object>> resendVerificationEmail(@RequestBody @Validated CheckEmailDto checkEmailDto) {

@@ -30,6 +30,8 @@ public interface PropertiesService {
 
     Page<Properties> getProperties(String search, String city, Users tenant, String sortBy, String direction, int page, int size);
 
+    void changeStatusProperty(Long propertyId);
+
 //    Page<Properties> getProperties(String search, String city, String sortBy, String direction, int page, int size);
 
 //    List<RoomResponseDto> getRoomsWithPeakRates(Long propertyId);

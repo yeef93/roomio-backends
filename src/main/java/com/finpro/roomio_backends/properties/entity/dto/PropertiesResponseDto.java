@@ -17,7 +17,7 @@ public class PropertiesResponseDto {
     private String location;
     private String city;
     private String map;
-    private Boolean isPublish;
+    private Boolean isActive;
     private CategoryDto category;  // Updated to hold both category name and image URL
     private TenantDto tenant; // Updated to hold tenant information as an object
     private List<ImagePropertiesListDto> images; // List of image DTOs
@@ -31,7 +31,7 @@ public class PropertiesResponseDto {
         this.location = properties.getLocation();
         this.city = properties.getCity();
         this.map = properties.getMap();
-        this.isPublish = properties.getIsPublish();
+        this.isActive = properties.getIsActive();
 
         // Map category data including name and image URL
         this.category = new CategoryDto(

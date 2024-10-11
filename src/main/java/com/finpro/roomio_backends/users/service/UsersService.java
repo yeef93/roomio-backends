@@ -42,6 +42,8 @@ public interface UsersService {
 
     void changeUserEmail(String currentEmail, String newEmail);
 
+    Users saveOrUpdateUser(String email, String name, String provider, Boolean isTenant);
+
 
 
 }

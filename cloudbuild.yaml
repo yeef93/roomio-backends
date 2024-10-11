@@ -1,0 +1,11 @@
+steps:
+  # Step to build the Spring Boot application using Maven
+  - name: 'maven:3.8.1-jdk-11'
+    args: ['mvn', 'clean', 'package']
+
+  # Step to build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/roomio-app-433106/spring-boot-app', '.']
+
+images:
+  - 'gcr.io/roomio-app-433106/spring-boot-app'

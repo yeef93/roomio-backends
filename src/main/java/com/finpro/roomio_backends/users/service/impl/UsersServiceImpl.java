@@ -200,5 +200,22 @@ public class UsersServiceImpl implements UsersService {
     }
 
 
+    @Override
+    public Users saveOrUpdateUser(String email, String name, String provider, Boolean isTenant) {
+        Optional<Users> existingUser = userRepository.findByEmail(email);
+        Users user;
+        if (existingUser.isPresent()) {
+            user = existingUser.get();
+            user.setFirstname(name);
+        } else {
+            user = new Users();
+            user.setEmail(email);
+            user.setFirstname(name);
+            user.setMethod(provider);
+            user.setIsTenant(isTenant);
+            user.setIsVerified(true);
+        }
+        return userRepository.save(user);
+    }
 
 }

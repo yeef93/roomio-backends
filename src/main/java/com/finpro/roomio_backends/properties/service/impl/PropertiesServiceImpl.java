@@ -13,6 +13,7 @@ import com.finpro.roomio_backends.properties.service.PropertiesService;
 import com.finpro.roomio_backends.users.entity.Users;
 import com.finpro.roomio_backends.users.repository.UsersRepository;
 import com.finpro.roomio_backends.users.service.UsersService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -204,6 +205,19 @@ public class PropertiesServiceImpl implements PropertiesService {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void changeStatusProperty(Long propertyId) {
+        Properties property = propertiesRepository.findById(propertyId)
+                .orElseThrow(() -> new EntityNotFoundException("Property not found"));
+
+        if (property.getIsActive()) {
+            property.setIsActive(false); // Deactivate
+        } else {
+            property.setIsActive(true);  // Activate
+        }
+        propertiesRepository.save(property);
     }
 
 //

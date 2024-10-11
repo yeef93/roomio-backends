@@ -54,10 +54,6 @@ public class Properties {
     @Column(name = "is_active")
     private Boolean isActive = true;
 
-    @ColumnDefault("false")
-    @Column(name = "is_publish")
-    private Boolean isPublish = false;
-
     @Column(name = "map", length = 400)
     private String map;
 

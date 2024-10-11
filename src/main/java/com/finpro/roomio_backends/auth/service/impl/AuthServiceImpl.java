@@ -6,6 +6,8 @@ import com.finpro.roomio_backends.auth.entity.dto.login.LoginResponseDto;
 import com.finpro.roomio_backends.auth.repository.AuthRedisRepository;
 import com.finpro.roomio_backends.auth.service.AuthService;
 import com.finpro.roomio_backends.responses.Response;
+import com.finpro.roomio_backends.users.entity.Users;
+import com.finpro.roomio_backends.users.service.UsersService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +20,7 @@ import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -26,6 +29,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +43,7 @@ public class AuthServiceImpl implements AuthService {
   private final AuthenticationManager authenticationManager;
   private final AuthRedisRepository authRedisRepository;
   private final JwtEncoder jwtEncoder;
+  private final UsersService usersService;
 
 
   @Override
@@ -48,6 +56,10 @@ public class AuthServiceImpl implements AuthService {
             .stream()
             .map(GrantedAuthority::getAuthority)
             .collect(Collectors.joining(" "));
+
+
+//    log.debug("User Authorities: {}", scope);
+
 
 //    // Log the claims values
 //    log.debug("Authentication Name: {}", authentication.getName());
@@ -145,5 +157,49 @@ public class AuthServiceImpl implements AuthService {
     }
   }
 
+  @Override
+  public ResponseEntity<?> loginWithGoogle(Map<String, String> userData) {
+    try {
+      String email = userData.get("email");
+      String name = userData.get("name");
+      String provider = userData.get("provider");
+      Boolean isTenant = Boolean.valueOf(userData.get("isTenant"));
+
+      // Save or update the user
+      Users user = usersService.saveOrUpdateUser(email, name, provider, isTenant);
+
+      List<GrantedAuthority> authorities = new ArrayList<>();
+      if (user.getIsTenant()) {
+        authorities.add(new SimpleGrantedAuthority("ROLE_TENANT"));
+      } else {
+        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+      }
+
+      // Create an authentication object with roles
+      Authentication authentication = new UsernamePasswordAuthenticationToken(email, null, authorities);
+      SecurityContextHolder.getContext().setAuthentication(authentication);
+      SecurityContextHolder.getContext().setAuthentication(authentication);
+
+      // Generate token
+      String token = generateToken(authentication);
+
+      // Prepare response
+      Map<String, Object> responseData = new HashMap<>();
+      responseData.put("message", "Welcome, " + email + "!");
+      responseData.put("token", token);
+      responseData.put("role", user.getIsTenant() ? "TENANT" : "USER");
+
+      return Response.successfulResponse("Login successful", responseData);
+    } catch (IllegalArgumentException ex) {
+      log.error("Validation error: {}", ex.getMessage());
+      return Response.failedResponse(HttpStatus.BAD_REQUEST.value(), "Validation error: " + ex.getMessage());
+    } catch (BadCredentialsException ex) {
+      log.error("Error during Google login: {}", ex.getMessage());
+      return Response.failedResponse(HttpStatus.UNAUTHORIZED.value(), "Bad credentials. Please check your Google account.");
+    } catch (Exception ex) {
+      log.error("Error during Google login: {}", ex.getMessage(), ex);
+      return Response.failedResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "An unexpected error occurred.");
+    }
+  }
 
 }

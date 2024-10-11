@@ -267,6 +267,17 @@ public class PropertiesController {
         }
     }
 
+    //change property status
+    @PatchMapping("/{propertyId}/change-status")
+    public ResponseEntity<?> setPropertyInactive(@PathVariable Long propertyId) {
+        try {
+        propertiesService.changeStatusProperty(propertyId);
+            return Response.successfulResponse(HttpStatus.OK.value(), "Property status successfully changed!", null);
+        } catch (Exception e) {
+            return Response.failedResponse(HttpStatus.BAD_REQUEST.value(), "Failed to change status property " + e.getMessage());
+        }
+    }
+
 
     @PostMapping("/{propertyId}/rooms")
     public ResponseEntity<?> addRoom(@PathVariable Long propertyId, @RequestBody RoomRequestDto roomDTO) {
