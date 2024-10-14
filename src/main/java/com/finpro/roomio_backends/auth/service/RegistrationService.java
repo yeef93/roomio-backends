@@ -138,6 +138,10 @@ public class RegistrationService {
         user.setIsTenant(true);
         user.setIsVerified(false);
         user.setFirstname(firstname);
+        // Set the avatar with ID 1
+        ImageUserAvatar avatar = new ImageUserAvatar();
+        avatar.setId(1L); // assuming ID is of type Long
+        user.setAvatar(avatar);
 
         redisTokenService.storeToken(token, email);
 
