@@ -18,6 +18,7 @@ import com.finpro.roomio_backends.users.entity.Users;
 import com.finpro.roomio_backends.users.repository.UsersRepository;
 import com.finpro.roomio_backends.users.service.UsersService;
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,23 +153,29 @@ public class PropertiesController {
     public ResponseEntity<?> getAllProperty(
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "city", required = false) String city,
-            @RequestParam(value = "tenantId", required = false) Long tenantId, // Assuming tenantId is a Long
+            @RequestParam(value = "tenantId", required = false) Long tenantId,
+            @RequestParam(value = "minCapacity", required = false) Integer minCapacity,
+            @RequestParam(value = "minPrice", required = false) BigDecimal minPrice,
+            @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice,
+            @RequestParam(value = "categoryId", required = false) Long categoryId,
+            @RequestParam(value = "checkIn", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,
+            @RequestParam(value = "checkOut", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOut,
             @RequestParam(value = "sortBy", defaultValue = "id") String sortBy,
             @RequestParam(value = "direction", defaultValue = "ASC") String direction,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
         try {
-            Users tenant = tenantId != null ? usersRepository.findById(tenantId).orElse(null) : null; // Fetch the tenant user
+            Users tenant = tenantId != null ? usersRepository.findById(tenantId).orElse(null) : null;
 
-            // Call the service with the search, city, tenant, sort, and pagination parameters
-            Page<Properties> propertiesPage = propertiesService.getProperties(search, city, tenant, sortBy, direction, page, size);
+            Page<Properties> propertiesPage = propertiesService.getProperties(
+                    search, city, tenant, minCapacity, minPrice, maxPrice, categoryId,
+                    checkIn, checkOut, sortBy, direction, page, size);
 
-            // Convert List of Property to List of PropertyResponseDto
             List<PropertiesResponseDto> propertyDtos = propertiesPage.getContent().stream()
                     .map(PropertiesResponseDto::new)
+                    .peek(dto -> dto.filterRooms(minCapacity, minPrice, maxPrice))
                     .collect(Collectors.toList());
 
-            // Create a response object with pagination details
             Map<String, Object> response = new HashMap<>();
             response.put("properties", propertyDtos);
             response.put("currentPage", propertiesPage.getNumber());
@@ -174,7 +183,6 @@ public class PropertiesController {
             response.put("totalPages", propertiesPage.getTotalPages());
             response.put("pageSize", propertiesPage.getSize());
 
-            // Return the response with pagination details
             return Response.successfulResponse(
                     HttpStatus.OK.value(),
                     "Properties retrieved successfully",
@@ -416,5 +424,14 @@ public class PropertiesController {
         }
     }
 
+    @GetMapping("/cities")
+    public ResponseEntity<?> getCities() {
+        try{
+            List<String> cities = propertiesService.getDistinctCities();
+            return Response.successfulResponse(HttpStatus.OK.value(), "Properties city retrieved successfully!", cities);
+        }catch (Exception e) {
+            return Response.failedResponse(HttpStatus.BAD_REQUEST.value(), "Failed to get city: " + e.getMessage());
+        }
+    }
 
 }

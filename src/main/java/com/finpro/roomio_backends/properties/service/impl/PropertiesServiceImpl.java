@@ -1,10 +1,12 @@
 package com.finpro.roomio_backends.properties.service.impl;
 
+import com.finpro.roomio_backends.bookings.entity.Bookings;
 import com.finpro.roomio_backends.categories.entity.Categories;
 import com.finpro.roomio_backends.categories.repository.CategoriesRepository;
 import com.finpro.roomio_backends.categories.service.CategoriesService;
 import com.finpro.roomio_backends.image.service.ImageService;
 import com.finpro.roomio_backends.properties.entity.Properties;
+import com.finpro.roomio_backends.properties.entity.Rooms;
 import com.finpro.roomio_backends.properties.entity.dto.PropertiesRequestDto;
 import com.finpro.roomio_backends.properties.repository.PropertiesRepository;
 import com.finpro.roomio_backends.properties.repository.RoomsPeakRateRepository;
@@ -14,6 +16,7 @@ import com.finpro.roomio_backends.users.entity.Users;
 import com.finpro.roomio_backends.users.repository.UsersRepository;
 import com.finpro.roomio_backends.users.service.UsersService;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.*;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,6 +25,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -118,26 +124,69 @@ public class PropertiesServiceImpl implements PropertiesService {
 
 
     @Override
-    public Page<Properties> getProperties(String search, String city, Users tenant, String sortBy, String direction, int page, int size) {
+    public Page<Properties> getProperties(String search, String city, Users tenant,
+                                          Integer minCapacity, BigDecimal minPrice, BigDecimal maxPrice,
+                                          Long categoryId, LocalDate checkIn, LocalDate checkOut,
+                                          String sortBy, String direction, int page, int size) {
         Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // Build the query based on provided parameters
-        if (search != null && !search.isEmpty() && city != null && !city.isEmpty() && tenant != null) {
-            return propertiesRepository.findByNameContainingIgnoreCaseAndCityIgnoreCaseAndUser(search, city, tenant, pageable);
-        } else if (search != null && !search.isEmpty() && tenant != null) {
-            return propertiesRepository.findByNameContainingIgnoreCaseAndUser(search, tenant, pageable);
-        } else if (city != null && !city.isEmpty() && tenant != null) {
-            return propertiesRepository.findByCityIgnoreCaseAndUser(city, tenant, pageable);
-        } else if (search != null && !search.isEmpty()) {
-            return propertiesRepository.findByNameContainingIgnoreCase(search, pageable);
-        } else if (city != null && !city.isEmpty()) {
-            return propertiesRepository.findByCityIgnoreCase(city, pageable);
-        } else if (tenant != null) {
-            return propertiesRepository.findByUser(tenant, pageable);
-        } else {
-            return propertiesRepository.findAll(pageable);
-        }
+        return propertiesRepository.findAll((root, query, cb) -> {
+            query.distinct(true);
+
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (search != null && !search.isEmpty()) {
+                predicates.add(cb.like(cb.lower(root.get("name")), "%" + search.toLowerCase() + "%"));
+            }
+            if (city != null && !city.isEmpty()) {
+                predicates.add(cb.equal(cb.lower(root.get("city")), city.toLowerCase()));
+            }
+            if (tenant != null) {
+                predicates.add(cb.equal(root.get("user"), tenant));
+            }
+            if (categoryId != null) {
+                predicates.add(cb.equal(root.get("categories").get("id"), categoryId));
+            }
+
+            if (minCapacity != null || minPrice != null || maxPrice != null || (checkIn != null && checkOut != null)) {
+                Subquery<Long> roomSubquery = query.subquery(Long.class);
+                Root<Rooms> roomRoot = roomSubquery.from(Rooms.class);
+
+                List<Predicate> roomPredicates = new ArrayList<>();
+                roomPredicates.add(cb.equal(roomRoot.get("properties"), root));
+                roomPredicates.add(cb.isTrue(roomRoot.get("isActive")));
+
+                if (minCapacity != null) {
+                    roomPredicates.add(cb.greaterThanOrEqualTo(roomRoot.get("capacity"), minCapacity));
+                }
+                if (minPrice != null) {
+                    roomPredicates.add(cb.greaterThanOrEqualTo(roomRoot.get("actualPrice"), minPrice));
+                }
+                if (maxPrice != null) {
+                    roomPredicates.add(cb.lessThanOrEqualTo(roomRoot.get("actualPrice"), maxPrice));
+                }
+
+                if (checkIn != null && checkOut != null) {
+                    Subquery<Long> bookingSubquery = query.subquery(Long.class);
+                    Root<Bookings> bookingRoot = bookingSubquery.from(Bookings.class);
+                    bookingSubquery.select(cb.count(bookingRoot))
+                            .where(cb.equal(bookingRoot.get("room"), roomRoot),
+                                    cb.lessThan(bookingRoot.get("checkInDate"), checkOut),
+                                    cb.greaterThan(bookingRoot.get("checkOutDate"), checkIn));
+                    roomPredicates.add(cb.equal(bookingSubquery, 0L));
+                }
+
+                roomSubquery.select(roomRoot.get("id"))
+                        .where(cb.and(roomPredicates.toArray(new Predicate[0])));
+
+                predicates.add(cb.exists(roomSubquery));
+            }
+
+            predicates.add(cb.isTrue(root.get("isActive")));
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        }, pageable);
     }
 
 
@@ -218,6 +267,11 @@ public class PropertiesServiceImpl implements PropertiesService {
             property.setIsActive(true);  // Activate
         }
         propertiesRepository.save(property);
+    }
+
+    @Override
+    public List<String> getDistinctCities() {
+        return propertiesRepository.findDistinctCities();
     }
 
 //

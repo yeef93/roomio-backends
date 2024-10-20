@@ -132,7 +132,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/api/v1/auth/**", "/api/v1/users/check-email?email=**").permitAll();
                     auth.requestMatchers("/send-test-email?to=**").permitAll();
-                    auth.requestMatchers(HttpMethod.GET, "/api/v1/property/**", "/api/v1/facility" ).permitAll();
+                    auth.requestMatchers(HttpMethod.GET, "/api/v1/property/**", "/api/v1/facility", "/api/v1/property?**" ).permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/v1/categories", "/api/v1/categories/**").permitAll();
                     auth.requestMatchers("/api/v1/tenant/create/**", "/api/v1/tenant/{tenantId}/update/**",
                             "/api/v1/tenant/**").hasAuthority(

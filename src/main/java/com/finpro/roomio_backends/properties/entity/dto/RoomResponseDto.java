@@ -22,7 +22,7 @@ public class RoomResponseDto {
     private BigDecimal basePrice;
     private Integer totalBathroom;
     private Boolean isActive;
-    private BigDecimal currentPrice;
+//    private BigDecimal currentPrice;
     private BigDecimal actualPrice;
     private List<RoomImageResponseDto> images;
 

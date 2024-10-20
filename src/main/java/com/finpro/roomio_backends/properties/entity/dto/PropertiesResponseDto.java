@@ -4,6 +4,7 @@ import com.finpro.roomio_backends.image.entity.dto.ImagePropertiesListDto;
 import com.finpro.roomio_backends.properties.entity.Properties;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -62,6 +63,16 @@ public class PropertiesResponseDto {
                         .map(RoomResponseDto::new)
                         .collect(Collectors.toList())
                 : List.of(); // Return an empty list if rooms is null
+    }
+
+    public void filterRooms(Integer minCapacity, BigDecimal minPrice, BigDecimal maxPrice) {
+        if (this.rooms != null) {
+            this.rooms = this.rooms.stream()
+                    .filter(room -> (minCapacity == null || room.getCapacity() >= minCapacity) &&
+                            (minPrice == null || room.getBasePrice().compareTo(minPrice) >= 0) &&
+                            (maxPrice == null || room.getBasePrice().compareTo(maxPrice) <= 0))
+                    .collect(Collectors.toList());
+        }
     }
 
     // Utility method to map Properties entity to PropertiesResponseDto

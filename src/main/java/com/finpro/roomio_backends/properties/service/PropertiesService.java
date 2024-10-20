@@ -5,6 +5,8 @@ import com.finpro.roomio_backends.properties.entity.dto.PropertiesRequestDto;
 import com.finpro.roomio_backends.users.entity.Users;
 import org.springframework.data.domain.Page;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,9 +30,14 @@ public interface PropertiesService {
     //delete property
     boolean deleteProperty(Long id);
 
-    Page<Properties> getProperties(String search, String city, Users tenant, String sortBy, String direction, int page, int size);
+    Page<Properties> getProperties(String search, String city, Users tenant,
+                                   Integer minCapacity, BigDecimal minPrice, BigDecimal maxPrice,
+                                   Long categoryId, LocalDate checkIn, LocalDate checkOut,
+                                   String sortBy, String direction, int page, int size);
 
     void changeStatusProperty(Long propertyId);
+
+    List<String> getDistinctCities();
 
 //    Page<Properties> getProperties(String search, String city, String sortBy, String direction, int page, int size);
 

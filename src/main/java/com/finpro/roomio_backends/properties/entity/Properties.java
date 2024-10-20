@@ -41,7 +41,7 @@ public class Properties {
     @JoinColumn(name = "category_id")
     private Categories categories;
 
-    @Column(name = "description", length = 500)
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "location", length = 500)
